@@ -17,62 +17,64 @@ local function enableNoclip()
     print("Noclip mode enabled.")
 end
 
--- Step 1: Teleport to the initial position
-print("Teleporting to the initial location...")
-humanoidRootPart.CFrame = CFrame.new(teleportPosition)
-wait(delayTime)
+while true do
+    humanoidRootPart.CFrame = CFrame.new(teleportPosition)
+    wait(delayTime)
 
--- Step 2: Locate VampireCastle
-local vampireCastle = workspace:FindFirstChild("VampireCastle")
-if vampireCastle and vampireCastle.PrimaryPart then
-    print("VampireCastle found at Z:", vampireCastle.PrimaryPart.Position.Z)
-else
-    warn("VampireCastle missing or invalid PrimaryPart.")
-end
+    -- Locate VampireCastle
+    local vampireCastle = workspace:FindFirstChild("VampireCastle")
+    if vampireCastle and vampireCastle.PrimaryPart then
+        print("VampireCastle found at Z:", vampireCastle.PrimaryPart.Position.Z)
 
--- Step 3: Locate MaximGun near VampireCastle
-local closestGun = nil
-if vampireCastle and vampireCastle.PrimaryPart then
-    for _, item in pairs(workspace.RuntimeItems:GetDescendants()) do
-        if item:IsA("Model") and item.Name == "MaximGun" then
-            local dist = (item.PrimaryPart.Position - vampireCastle.PrimaryPart.Position).Magnitude
-            if dist <= 500 then
-                closestGun = item
-                break
+        -- Locate MaximGun near VampireCastle
+        local closestGun = nil
+        for _, item in pairs(workspace.RuntimeItems:GetDescendants()) do
+            if item:IsA("Model") and item.Name == "MaximGun" then
+                local dist = (item.PrimaryPart.Position - vampireCastle.PrimaryPart.Position).Magnitude
+                if dist <= 500 then
+                    closestGun = item
+                    break
+                end
             end
         end
-    end
-end
 
--- Step 4: Teleport to MaximGun or fallback to Chair
-local foundSeat = nil
-if closestGun then
-    local seat = closestGun:FindFirstChild("VehicleSeat")
-    if seat then
-        foundSeat = seat
-        character:PivotTo(foundSeat.CFrame)
-        seat:Sit(humanoid)
-        print("Seated on MaximGun.")
-        enableNoclip()
+        if closestGun then
+            local seat = closestGun:FindFirstChild("VehicleSeat")
+            if seat then
+                character:PivotTo(seat.CFrame)
+                seat:Sit(humanoid)
+                print("Seated on MaximGun.")
+                enableNoclip()
+                break -- Exit loop after sitting
+            else
+                warn("MaximGun seat not found.")
+            end
+        else
+            warn("No MaximGun near VampireCastle.")
+        end
     else
-        warn("MaximGun seat not found.")
+        warn("VampireCastle missing or invalid PrimaryPart.")
     end
-else
-    warn("No MaximGun near VampireCastle. Searching for fallback Chair...")
+
+    -- Fallback: Locate Chair
+    local foundChair = nil
     for _, item in pairs(workspace.RuntimeItems:GetDescendants()) do
         if item.Name == "Chair" then
             local seat = item:FindFirstChild("Seat")
             if seat and seat.Position.Z >= -9500 and seat.Position.Z <= -9000 then
-                foundSeat = seat
+                foundChair = seat
                 character:PivotTo(seat.CFrame)
                 seat:Sit(humanoid)
                 print("Fallback: Seated on Chair at Z:", seat.Position.Z)
                 enableNoclip()
-                break
+                break -- Exit loop after sitting
             end
         end
     end
-    if not foundSeat then
-        warn("No Chair found within range.")
+
+    if foundChair then
+        break -- Exit loop after finding the Chair
+    else
+        warn("No Chair found within range. Continuing teleport loop...")
     end
 end
